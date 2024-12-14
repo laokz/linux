@@ -1627,7 +1627,7 @@ static int add_jump_destinations(struct objtool_file *file)
 		} else if (reloc->sym->return_thunk) {
 			add_return_call(file, insn, true);
 			continue;
-		} else if (insn_func(insn)) {
+		} else if (insn_func(insn) && reloc->sym->type == STT_FUNC) {
 			/*
 			 * External sibling call or internal sibling call with
 			 * STT_FUNC reloc.
