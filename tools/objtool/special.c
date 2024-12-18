@@ -51,6 +51,16 @@ static const struct special_entry entries[] = {
 		.orig = EX_ORIG_OFFSET,
 		.new = EX_NEW_OFFSET,
 	},
+	{
+		.sec = ".alternative",
+		.group = true,
+		.size = ALT_ENTRY_SIZE,
+		.orig = ALT_ORIG_OFFSET,
+		.orig_len = ALT_ORIG_LEN_OFFSET,
+		.new = ALT_NEW_OFFSET,
+		.new_len = ALT_NEW_LEN_OFFSET,
+		.feature = ALT_FEATURE_OFFSET,
+	},
 	{},
 };
 
@@ -82,6 +92,21 @@ static int get_alt_entry(struct elf *elf, const struct special_entry *entry,
 						   entry->orig_len);
 		alt->new_len = *(unsigned char *)(sec->data->d_buf + offset +
 						  entry->new_len);
+		/*
+		 * On RISC-V, new_len should not be 0.
+		 * Try calculate it from relocs which might be ADD16/SUB16 pairs.
+		 */
+		if (alt->new_len == 0 && elf->ehdr.e_machine == EM_RISCV) {
+			struct reloc *radd, *rsub;
+			radd = find_reloc_by_dest(elf, sec, offset + entry->new_len);
+			if (!radd) {
+				WARN_FUNC("can't find new_len", sec, offset + entry->new_len);
+				return -1;
+			}
+			rsub = radd + 1;
+			alt->new_len = radd->sym->offset - rsub->sym->offset;
+			alt->orig_len = alt->new_len;
+		}
 	}
 
 	orig_reloc = find_reloc_by_dest(elf, sec, offset + entry->orig);
@@ -91,6 +116,9 @@ static int get_alt_entry(struct elf *elf, const struct special_entry *entry,
 	}
 
 	reloc_to_sec_off(orig_reloc, &alt->orig_sec, &alt->orig_off);
+	/* Skip data section alts */
+	if (!alt->orig_sec || !(alt->orig_sec->sh.sh_flags & SHF_EXECINSTR))
+		return 1;
 
 	if (entry->feature) {
 		unsigned short feature;
