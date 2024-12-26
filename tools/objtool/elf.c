@@ -282,7 +282,7 @@ struct reloc *find_reloc_by_dest_range(const struct elf *elf, struct section *se
 
 			if (reloc_offset(reloc) >= offset &&
 			    reloc_offset(reloc) < offset + len) {
-				if (!r || reloc_offset(reloc) < reloc_offset(r))
+				if (!r || reloc_offset(reloc) <= reloc_offset(r))
 					r = reloc;
 			}
 		}

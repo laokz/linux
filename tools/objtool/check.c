@@ -645,6 +645,10 @@ static int add_dead_ends(struct objtool_file *file)
 		goto reachable;
 
 	for_each_reloc(rsec, reloc) {
+		/* If reloc symbol belongs to .discard.unreachable, ignore it */
+		if (reloc->sym->sec == rsec->base)
+			continue;
+
 		if (reloc->sym->type == STT_SECTION) {
 			offset = reloc_addend(reloc);
 		} else if (reloc->sym->local_label) {
@@ -1095,6 +1099,10 @@ static void add_ignores(struct objtool_file *file)
 			break;
 
 		default:
+			 /* If reloc symbol belongs to the .discard section, ignore it */
+			if (reloc->sym->sec == rsec->base)
+				continue;
+
 			WARN("unexpected relocation symbol type in %s: %d",
 			     rsec->name, reloc->sym->type);
 			continue;
@@ -2085,6 +2093,10 @@ static int add_jump_table(struct objtool_file *file, struct instruction *insn,
 	 * instruction.
 	 */
 	for_each_reloc_from(table->sec, reloc) {
+
+		/* If reloc symbol belongs to .rodata, ignore it */
+		if (reloc->sym->sec == table->sec->base)
+			continue;
 
 		/* Check for the end of the table: */
 		if (reloc != table && reloc == next_table)
