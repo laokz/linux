@@ -68,7 +68,10 @@ struct instruction {
 
 	struct alt_group *alt_group;
 	struct instruction *jump_dest;
-	struct instruction *first_jump_src;
+	union {
+		struct instruction *first_jump_src;
+		unsigned long arch_data;
+	};
 	union {
 		struct symbol *_call_dest;
 		struct reloc *_jump_table;

@@ -41,4 +41,7 @@ struct reloc *arch_find_switch_table(struct objtool_file *file,
 				    struct instruction *insn);
 bool dead_end_function(struct objtool_file *file, struct symbol *func);
 void arch_add_dead_ends(struct objtool_file *file);
+struct instruction *arch_add_jump_table(struct objtool_file *file,
+	struct reloc *reloc, struct symbol *pfunc, unsigned int prev_offset);
+void mark_func_jump_tables(struct objtool_file *file, struct symbol *func);
 #endif /* _SPECIAL_H */

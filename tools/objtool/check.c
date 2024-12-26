@@ -2084,6 +2084,21 @@ out:
 	return ret;
 }
 
+__weak struct instruction *arch_add_jump_table(struct objtool_file *file,
+	struct reloc *reloc, struct symbol *pfunc, unsigned int prev_offset)
+{
+	/* Make sure the table entries are consecutive: */
+	if (prev_offset && reloc_offset(reloc) != prev_offset + 8)
+		return NULL;
+
+	/* Detect function pointers from contiguous objects: */
+	if (reloc->sym->sec == pfunc->sec &&
+	    reloc_addend(reloc) == pfunc->offset)
+		return NULL;
+
+	return find_insn(file, reloc->sym->sec, reloc_addend(reloc));
+}
+
 static int add_jump_table(struct objtool_file *file, struct instruction *insn,
 			  struct reloc *next_table)
 {
@@ -2108,16 +2123,7 @@ static int add_jump_table(struct objtool_file *file, struct instruction *insn,
 		if (reloc != table && reloc == next_table)
 			break;
 
-		/* Make sure the table entries are consecutive: */
-		if (prev_offset && reloc_offset(reloc) != prev_offset + 8)
-			break;
-
-		/* Detect function pointers from contiguous objects: */
-		if (reloc->sym->sec == pfunc->sec &&
-		    reloc_addend(reloc) == pfunc->offset)
-			break;
-
-		dest_insn = find_insn(file, reloc->sym->sec, reloc_addend(reloc));
+		dest_insn = arch_add_jump_table(file, reloc, pfunc, prev_offset);
 		if (!dest_insn)
 			break;
 
@@ -2192,7 +2198,7 @@ static struct reloc *find_jump_table(struct objtool_file *file,
  * First pass: Mark the head of each jump table so that in the next pass,
  * we know when a given jump table ends and the next one starts.
  */
-static void mark_func_jump_tables(struct objtool_file *file,
+__weak void mark_func_jump_tables(struct objtool_file *file,
 				    struct symbol *func)
 {
 	struct instruction *insn, *last = NULL;
