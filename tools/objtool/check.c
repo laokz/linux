@@ -307,7 +307,7 @@ static bool __dead_end_function(struct objtool_file *file, struct symbol *func,
 	return true;
 }
 
-static bool dead_end_function(struct objtool_file *file, struct symbol *func)
+bool dead_end_function(struct objtool_file *file, struct symbol *func)
 {
 	return __dead_end_function(file, func, 0);
 }
@@ -627,6 +627,10 @@ static struct instruction *find_last_insn(struct objtool_file *file,
 	return insn;
 }
 
+__weak void arch_add_dead_ends(struct objtool_file *file)
+{
+}
+
 /*
  * Mark "ud2" instructions and manually annotated dead ends.
  */
@@ -636,6 +640,8 @@ static int add_dead_ends(struct objtool_file *file)
 	struct reloc *reloc;
 	struct instruction *insn;
 	uint64_t offset;
+
+	arch_add_dead_ends(file);
 
 	/*
 	 * Check for manually annotated dead ends.

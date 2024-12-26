@@ -39,4 +39,6 @@ bool arch_support_alt_relocation(struct special_alt *special_alt,
 				 struct reloc *reloc);
 struct reloc *arch_find_switch_table(struct objtool_file *file,
 				    struct instruction *insn);
+bool dead_end_function(struct objtool_file *file, struct symbol *func);
+void arch_add_dead_ends(struct objtool_file *file);
 #endif /* _SPECIAL_H */
