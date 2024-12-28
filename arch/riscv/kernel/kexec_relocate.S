@@ -7,6 +7,7 @@
 #include <asm/asm.h>	/* For RISCV_* and REG_* macros */
 #include <asm/csr.h>	/* For CSR_* macros */
 #include <asm/page.h>	/* For PAGE_SIZE */
+#include <asm/unwind_hints.h>
 #include <linux/linkage.h> /* For SYM_* macros */
 
 .section ".rodata"
@@ -149,6 +150,7 @@ riscv_kexec_relocate_end:
 /* Used for jumping to crashkernel */
 .section ".text"
 SYM_CODE_START(riscv_kexec_norelocate)
+	UNWIND_HINT_UNDEFINED
 	/*
 	 * s0: (const) Phys address to jump to
 	 * s1: (const) Phys address of the FDT image

@@ -15,10 +15,12 @@
 #include <asm/image.h>
 #include <asm/scs.h>
 #include <asm/xip_fixup.h>
+#include <asm/unwind_hints.h>
 #include "efi-header.S"
 
 __HEAD
 SYM_CODE_START(_start)
+	UNWIND_HINT_END_OF_STACK
 	/*
 	 * Image header expected by Linux boot-loaders. The image header data
 	 * structure is described in asm/image.h.
@@ -37,6 +39,8 @@ SYM_CODE_START(_start)
 	/* reserved */
 	.word 0
 #endif
+	/* Avoid objtool warning these as code. */
+	UNWIND_HINT_UNDEFINED
 	.balign 8
 #ifdef CONFIG_RISCV_M_MODE
 	/* Image load offset (0MB) from start of RAM for M-mode */
@@ -72,6 +76,7 @@ pe_head_start:
 #ifdef CONFIG_MMU
 	.global relocate_enable_mmu
 relocate_enable_mmu:
+	UNWIND_HINT_FUNC
 	/* Relocate return address */
 	la a1, kernel_map
 	XIP_FIXUP_OFFSET a1
@@ -127,6 +132,7 @@ relocate_enable_mmu:
 #ifdef CONFIG_SMP
 	.global secondary_start_sbi
 secondary_start_sbi:
+	UNWIND_HINT_UNDEFINED
 	/* Mask all interrupts */
 	csrw CSR_IE, zero
 	csrw CSR_IP, zero
@@ -154,6 +160,7 @@ secondary_start_sbi:
 	XIP_FIXUP_OFFSET a3
 	add a3, a3, a1
 	REG_L sp, (a3)
+	UNWIND_HINT_UNDEFINED
 
 .Lsecondary_start_common:
 
@@ -170,6 +177,7 @@ secondary_start_sbi:
 
 .align 2
 .Lsecondary_park:
+	UNWIND_HINT_END_OF_STACK
 	/*
 	 * Park this hart if we:
 	 *  - have too many harts on CONFIG_RISCV_BOOT_SPINWAIT
@@ -181,6 +189,7 @@ secondary_start_sbi:
 
 .align 2
 .Lsetup_trap_vector:
+	UNWIND_HINT_FUNC
 	/* Set trap vector to exception handler */
 	la a0, handle_exception
 	csrw CSR_TVEC, a0

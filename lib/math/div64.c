@@ -24,6 +24,9 @@
 #include <linux/math64.h>
 #include <linux/minmax.h>
 #include <linux/log2.h>
+#ifdef CONFIG_RISCV
+#include <linux/objtool.h>>
+#endif
 
 /* Not needed on 64bit architectures */
 #if BITS_PER_LONG == 32
@@ -266,4 +269,14 @@ u64 mul_u64_u64_div_u64(u64 a, u64 b, u64 c)
 	return res;
 }
 EXPORT_SYMBOL(mul_u64_u64_div_u64);
+#ifdef CONFIG_RISCV
+/*
+ * TODO: how to deal with if FP used as a purely scratch?
+ * Gcc14 generate one code path without FP, thus regs[FP] is undefined.
+ * Another code path with FP used as a purely scratch register and happen
+ * to be save at CFA position on the stack, thus regs[FP] is CFA-16.
+ * insn_cfi_match() failed verifying these two path.
+ */
+STACK_FRAME_NON_STANDARD(mul_u64_u64_div_u64);
+#endif
 #endif

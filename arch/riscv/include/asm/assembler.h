@@ -15,6 +15,7 @@
 #include <asm/asm.h>
 #include <asm/asm-offsets.h>
 #include <asm/csr.h>
+#include <asm/unwind_hints.h>
 
 /*
  * suspend_restore_csrs - restore CSRs
@@ -36,6 +37,11 @@
 	.macro suspend_restore_regs
 		REG_L	ra, (SUSPEND_CONTEXT_REGS + PT_RA)(a0)
 		REG_L	sp, (SUSPEND_CONTEXT_REGS + PT_SP)(a0)
+		/*
+		 * TODO: From now on, the thread is like a sub-func ready
+		 * to return to original thread. Right?
+		 */
+		UNWIND_HINT_FUNC
 		REG_L	gp, (SUSPEND_CONTEXT_REGS + PT_GP)(a0)
 		REG_L	tp, (SUSPEND_CONTEXT_REGS + PT_TP)(a0)
 		REG_L	s0, (SUSPEND_CONTEXT_REGS + PT_S0)(a0)

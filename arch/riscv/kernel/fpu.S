@@ -18,6 +18,7 @@
 #include <asm/asm.h>
 #include <asm/csr.h>
 #include <asm/asm-offsets.h>
+#include <asm/unwind_hints.h>
 
 SYM_FUNC_START(__fstate_save)
 	li  a2,  TASK_THREAD_F0
@@ -187,6 +188,11 @@ SYM_FUNC_START(put_f32_reg)
 	fp_access_body(put_f32)
 	fp_access_epilogue
 SYM_FUNC_END(put_f32_reg)
+/*
+ * These 4 funcs not really non-standard but have jump table which objtool
+ * difficult to recognize. They have no stack ops so safe to ignore validation.
+ */
+STACK_FRAME_NON_STANDARD(put_f32_reg)
 
 /*
  * get_f32_reg - Get a FP register value and return it
@@ -197,6 +203,7 @@ SYM_FUNC_START(get_f32_reg)
 	fp_access_body(get_f32)
 	fp_access_epilogue
 SYM_FUNC_END(get_f32_reg)
+STACK_FRAME_NON_STANDARD(get_f32_reg)
 
 /*
  * put_f64_reg - Set a 64 bits FP register from a value or a pointer.
@@ -209,6 +216,7 @@ SYM_FUNC_START(put_f64_reg)
 	fp_access_body(put_f64)
 	fp_access_epilogue
 SYM_FUNC_END(put_f64_reg)
+STACK_FRAME_NON_STANDARD(put_f64_reg)
 
 /*
  * get_f64_reg - Get a 64 bits FP register value and returned it or store it to
@@ -223,5 +231,6 @@ SYM_FUNC_START(get_f64_reg)
 	fp_access_body(get_f64)
 	fp_access_epilogue
 SYM_FUNC_END(get_f64_reg)
+STACK_FRAME_NON_STANDARD(get_f64_reg)
 
 #endif /* CONFIG_RISCV_MISALIGNED */

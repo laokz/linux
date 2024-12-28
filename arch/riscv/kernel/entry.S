@@ -15,6 +15,7 @@
 #include <asm/thread_info.h>
 #include <asm/asm-offsets.h>
 #include <asm/errata_list.h>
+#include <asm/unwind_hints.h>
 #include <linux/sizes.h>
 
 	.section .irqentry.text, "ax"
@@ -93,6 +94,7 @@ _new_vmalloc_restore_context_a0:
 
 
 SYM_CODE_START(handle_exception)
+	UNWIND_HINT_UNDEFINED
 	/*
 	 * If coming from userspace, preserve the user thread pointer and load
 	 * the kernel thread pointer.  If we came from the kernel, the scratch
@@ -122,14 +124,17 @@ SYM_CODE_START(handle_exception)
 #ifdef CONFIG_VMAP_STACK
 	addi sp, sp, -(PT_SIZE_ON_STACK)
 	srli sp, sp, THREAD_SHIFT
+	UNWIND_HINT_UNDEFINED
 	andi sp, sp, 0x1
 	bnez sp, handle_kernel_stack_overflow
 	REG_L sp, TASK_TI_KERNEL_SP(tp)
+	UNWIND_HINT_UNDEFINED
 #endif
 
 .Lsave_context:
 	REG_S sp, TASK_TI_USER_SP(tp)
 	REG_L sp, TASK_TI_KERNEL_SP(tp)
+	UNWIND_HINT_UNDEFINED
 	addi sp, sp, -(PT_SIZE_ON_STACK)
 	REG_S x1,  PT_RA(sp)
 	REG_S x3,  PT_GP(sp)
@@ -157,6 +162,7 @@ SYM_CODE_START(handle_exception)
 	REG_S s3, PT_BADADDR(sp)
 	REG_S s4, PT_CAUSE(sp)
 	REG_S s5, PT_TP(sp)
+	UNWIND_HINT_REGS
 
 	/*
 	 * Set the scratch register to 0, so that if a recursive exception
@@ -210,6 +216,7 @@ ASM_NOKPROBE(handle_exception)
  *  - ret_from_fork
  */
 SYM_CODE_START_NOALIGN(ret_from_exception)
+	UNWIND_HINT_REGS
 	REG_L s0, PT_STATUS(sp)
 #ifdef CONFIG_RISCV_M_MODE
 	/* the MPP value is too large to be used as an immediate arg for addi */
@@ -272,6 +279,7 @@ SYM_CODE_START_NOALIGN(ret_from_exception)
 	restore_from_x6_to_x31
 
 	REG_L x2,  PT_SP(sp)
+	UNWIND_HINT_UNDEFINED
 
 #ifdef CONFIG_RISCV_M_MODE
 	mret
@@ -283,6 +291,7 @@ ASM_NOKPROBE(ret_from_exception)
 
 #ifdef CONFIG_VMAP_STACK
 SYM_CODE_START_LOCAL(handle_kernel_stack_overflow)
+	UNWIND_HINT_UNDEFINED
 	/* we reach here from kernel context, sscratch must be 0 */
 	csrrw x31, CSR_SCRATCH, x31
 	asm_per_cpu sp, overflow_stack, x31
@@ -319,6 +328,8 @@ ASM_NOKPROBE(handle_kernel_stack_overflow)
 #endif
 
 SYM_CODE_START(ret_from_fork)
+	/* Beginning of newly forked task. */
+	UNWIND_HINT_END_OF_STACK
 	call schedule_tail
 	beqz s0, 1f	/* not from kernel thread */
 	/* Call fn(arg) */
@@ -351,6 +362,7 @@ SYM_FUNC_START(call_on_irq_stack)
 	/* Switch to the per-CPU IRQ stack and call the handler */
 	load_per_cpu t0, irq_stack_ptr, t1
 	li	t1, IRQ_STACK_SIZE
+	UNWIND_HINT_SAVE
 	add	sp, t0, t1
 	jalr	a1
 
@@ -359,6 +371,7 @@ SYM_FUNC_START(call_on_irq_stack)
 
 	/* Switch back to the thread stack and restore ra and s0 */
 	addi	sp, s0, -STACKFRAME_SIZE_ON_STACK
+	UNWIND_HINT_RESTORE
 	REG_L	ra, STACKFRAME_RA(sp)
 	REG_L	s0, STACKFRAME_FP(sp)
 	addi	sp, sp, STACKFRAME_SIZE_ON_STACK
@@ -401,6 +414,7 @@ SYM_FUNC_START(__switch_to)
 	/* Restore context from next->thread */
 	REG_L ra,  TASK_THREAD_RA_RA(a4)
 	REG_L sp,  TASK_THREAD_SP_RA(a4)
+	UNWIND_HINT_UNDEFINED
 	REG_L s0,  TASK_THREAD_S0_RA(a4)
 	REG_L s1,  TASK_THREAD_S1_RA(a4)
 	REG_L s2,  TASK_THREAD_S2_RA(a4)
@@ -417,6 +431,8 @@ SYM_FUNC_START(__switch_to)
 	move tp, a1
 	/* Switch to the next shadow call stack */
 	scs_load_current
+	/*Z Fool objtool not warn "return with modified stack frame" */
+	UNWIND_HINT_FUNC
 	ret
 SYM_FUNC_END(__switch_to)
 

@@ -8,11 +8,13 @@
  *
  */
 #include <asm/asm.h>
+#include <asm/unwind_hints.h>
 #include <linux/linkage.h>
 
 .text
 
 SYM_CODE_START(purgatory_start)
+	UNWIND_HINT_UNDEFINED
 
 	lla	sp, .Lstack
 	mv	s0, a0	/* The hartid of the current hart */

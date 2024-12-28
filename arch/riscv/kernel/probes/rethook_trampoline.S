@@ -6,6 +6,7 @@
 
 #include <asm/asm.h>
 #include <asm/asm-offsets.h>
+#include <asm/unwind_hints.h>
 
 	.text
 	.altmacro
@@ -76,6 +77,10 @@
 	.endm
 
 SYM_CODE_START(arch_rethook_trampoline)
+	/* TODO: can we leverage unwind_recover_rethook ? */
+ 	.noaltmacro
+	UNWIND_HINT_UNDEFINED
+	.altmacro
 	addi sp, sp, -(PT_SIZE_ON_STACK)
 	save_all_base_regs
 

@@ -10,6 +10,7 @@
 #include <asm/thread_info.h>
 #include <asm/asm-offsets.h>
 #include <asm/ftrace.h>
+#include <asm/unwind_hints.h>
 
 	.text
 
@@ -186,6 +187,7 @@ SYM_FUNC_END(ftrace_caller)
 
 #ifdef CONFIG_DYNAMIC_FTRACE_WITH_DIRECT_CALLS
 SYM_CODE_START(ftrace_stub_direct_tramp)
+	UNWIND_HINT_FUNC
 	jr	t0
 SYM_CODE_END(ftrace_stub_direct_tramp)
 #endif /* CONFIG_DYNAMIC_FTRACE_WITH_DIRECT_CALLS */

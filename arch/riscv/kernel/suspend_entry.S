@@ -85,7 +85,9 @@ SYM_TYPED_FUNC_START(__cpu_resume_enter)
 	suspend_restore_csrs
 
 	/* Restore registers (except A0 and T0-T6) */
+	.noaltmacro
 	suspend_restore_regs
+	.altmacro
 
 	/* Return zero value */
 	add	a0, zero, zero

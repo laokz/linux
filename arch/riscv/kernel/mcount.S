@@ -11,6 +11,7 @@
 #include <asm/thread_info.h>
 #include <asm/asm-offsets.h>
 #include <asm/ftrace.h>
+#include <asm/unwind_hints.h>
 
 	.text
 
@@ -62,6 +63,7 @@ SYM_TYPED_FUNC_START(ftrace_stub_graph)
 SYM_FUNC_END(ftrace_stub_graph)
 
 SYM_FUNC_START(return_to_handler)
+	UNWIND_HINT_UNDEFINED
 /*
  * On implementing the frame point test, the ideal way is to compare the
  * s0 (frame pointer, if enabled) on entry and the sp (stack pointer) on return.

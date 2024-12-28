@@ -10,6 +10,7 @@
 #include <asm/asm.h>
 #include <asm/asm-offsets.h>
 #include <asm/csr.h>
+#include <asm/unwind_hints.h>
 
 	.text
 	.altmacro
@@ -73,9 +74,17 @@ SYM_FUNC_START(__kvm_riscv_switch_to)
 	REG_S	t3, (KVM_ARCH_HOST_SSCRATCH)(a0)
 	REG_S	t4, (KVM_ARCH_HOST_STVEC)(a0)
 
+	.noaltmacro
+	UNWIND_HINT_SAVE
+	.altmacro
+
 	/* Restore Guest GPRs (except A0) */
-	REG_L	ra, (KVM_ARCH_GUEST_RA)(a0)
 	REG_L	sp, (KVM_ARCH_GUEST_SP)(a0)
+	.noaltmacro
+	UNWIND_HINT_UNDEFINED
+	.altmacro
+
+	REG_L	ra, (KVM_ARCH_GUEST_RA)(a0)
 	REG_L	gp, (KVM_ARCH_GUEST_GP)(a0)
 	REG_L	tp, (KVM_ARCH_GUEST_TP)(a0)
 	REG_L	t0, (KVM_ARCH_GUEST_T0)(a0)
@@ -111,6 +120,10 @@ SYM_FUNC_START(__kvm_riscv_switch_to)
 	/* Resume Guest */
 	sret
 
+	/* Avoid objtool warning alignment as code. */
+	.noaltmacro
+	UNWIND_HINT_UNDEFINED
+	.altmacro
 	/* Back to Host */
 	.align 2
 .Lkvm_switch_return:
@@ -184,6 +197,10 @@ SYM_FUNC_START(__kvm_riscv_switch_to)
 	/* Restore Host GPRs (except A0 and T0-T6) */
 	REG_L	ra, (KVM_ARCH_HOST_RA)(a0)
 	REG_L	sp, (KVM_ARCH_HOST_SP)(a0)
+	.noaltmacro
+	UNWIND_HINT_RESTORE
+	.altmacro
+
 	REG_L	gp, (KVM_ARCH_HOST_GP)(a0)
 	REG_L	tp, (KVM_ARCH_HOST_TP)(a0)
 	REG_L	s0, (KVM_ARCH_HOST_S0)(a0)
@@ -211,6 +228,9 @@ SYM_FUNC_START(__kvm_riscv_switch_to)
 SYM_FUNC_END(__kvm_riscv_switch_to)
 
 SYM_CODE_START(__kvm_riscv_unpriv_trap)
+	.noaltmacro
+	UNWIND_HINT_END_OF_STACK
+	.altmacro
 	/*
 	 * We assume that faulting unpriv load/store instruction is
 	 * 4-byte long and blindly increment SEPC by 4.
