@@ -61,6 +61,10 @@ ifeq ($(SRCARCH),loongarch)
 	BUILD_ORC := y
 endif
 
+ifeq ($(SRCARCH),riscv)
+	BUILD_ORC := y
+endif
+
 export BUILD_ORC
 export srctree OUTPUT CFLAGS SRCARCH AWK
 include $(srctree)/tools/build/Makefile.include

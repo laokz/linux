@@ -19,6 +19,7 @@
 #include <asm/cache.h>
 #include <asm/thread_info.h>
 #include <asm/set_memory.h>
+#include <asm/orc_lookup.h>
 #include "image-vars.h"
 
 #include <linux/sizes.h>
@@ -118,6 +119,8 @@ SECTIONS
 		__alt_end = .;
 	}
 	__init_end = .;
+
+	ORC_UNWIND_TABLE
 
 	/* Start of data section */
 	_sdata = .;

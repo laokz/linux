@@ -38,6 +38,9 @@ endif
 ifeq ($(ARCH),loongarch)
 SRCARCH := loongarch
 endif
+ifeq ($(ARCH),riscv)
+SRCARCH := riscv
+endif
 HOSTCFLAGS_sorttable.o += -I$(srctree)/tools/arch/$(SRCARCH)/include
 HOSTCFLAGS_sorttable.o += -DUNWINDER_ORC_ENABLED
 endif

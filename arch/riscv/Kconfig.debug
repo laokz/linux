@@ -1,1 +1,36 @@
+choice
+	prompt "Choose kernel unwinder"
+	default UNWINDER_ORC if 64BIT
+	default UNWINDER_FRAME_POINTER if 32BIT
+	help
+	  This determines which method will be used for unwinding kernel stack
+	  traces for panics, oopses, bugs, warnings, perf, /proc/<pid>/stack,
+	  livepatch, lockdep, and more.
+
+config UNWINDER_ORC
+	bool "ORC unwinder"
+	depends on HAVE_OBJTOOL
+	select OBJTOOL
+	help
+	  This option enables the ORC (Oops Rewind Capability) unwinder for
+	  unwinding kernel stack traces.  It uses a custom data format which is
+	  a simplified version of the DWARF Call Frame Information standard.
+
+	  Enabling this option will increase the kernel's runtime memory usage
+	  by roughly 2-4MB, depending on your kernel config.
+
+config UNWINDER_FRAME_POINTER
+	bool "Frame pointer unwinder"
+	select ARCH_WANT_FRAME_POINTERS
+	select FRAME_POINTER
+	help
+	  This option enables the frame pointer unwinder for unwinding kernel
+	  stack traces.
+
+	  The unwinder itself is fast and it uses less RAM than the ORC
+	  unwinder, but the kernel text size will grow by ~3% and the kernel's
+	  overall performance will degrade by roughly 5-10%.
+
+endchoice
+
 source "arch/riscv/kernel/tests/Kconfig.debug"

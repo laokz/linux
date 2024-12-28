@@ -13,3 +13,5 @@ generic-y += qrwlock.h
 generic-y += qrwlock_types.h
 generic-y += user.h
 generic-y += vmlinux.lds.h
+
+generated-y += orc_hash.h

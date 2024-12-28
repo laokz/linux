@@ -13,6 +13,9 @@
 #include <linux/ftrace.h>
 
 #include <asm/stacktrace.h>
+#ifdef CONFIG_UNWINDER_ORC
+#include <asm/unwind.h>
+#endif
 
 #ifdef CONFIG_FRAME_POINTER
 
@@ -83,7 +86,26 @@ void notrace walk_stackframe(struct task_struct *task, struct pt_regs *regs,
 	}
 }
 
-#else /* !CONFIG_FRAME_POINTER */
+#elif defined(CONFIG_UNWINDER_ORC)
+
+void notrace walk_stackframe(struct task_struct *task,
+	struct pt_regs *regs, bool (*fn)(void *, unsigned long), void *arg)
+{
+	struct unwind_state state;
+	unsigned long addr;
+
+	if (regs && !fn(arg, regs->ra))
+		return;
+
+	for (unwind_start(&state, task, regs, NULL); !unwind_done(&state);
+	     unwind_next_frame(&state)) {
+		addr = unwind_get_return_address(&state);
+		if (!addr || !fn(arg, addr))
+			break;
+	}
+}
+
+#else
 
 void notrace walk_stackframe(struct task_struct *task,
 	struct pt_regs *regs, bool (*fn)(void *, unsigned long), void *arg)

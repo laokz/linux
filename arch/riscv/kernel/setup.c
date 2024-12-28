@@ -36,6 +36,9 @@
 #include <asm/thread_info.h>
 #include <asm/kasan.h>
 #include <asm/efi.h>
+#ifdef CONFIG_UNWINDER_ORC
+#include <asm/unwind.h>
+#endif
 
 #include "head.h"
 
@@ -279,6 +282,10 @@ void __init setup_arch(char **cmdline_p)
 
 #ifdef CONFIG_SMP
 	setup_smp();
+#endif
+
+#ifdef CONFIG_UNWINDER_ORC
+	unwind_init();
 #endif
 
 	if (!acpi_disabled) {
