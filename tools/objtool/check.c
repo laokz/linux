@@ -61,7 +61,7 @@ struct instruction *next_insn_same_sec(struct objtool_file *file,
 	return insn;
 }
 
-static struct instruction *next_insn_same_func(struct objtool_file *file,
+struct instruction *next_insn_same_func(struct objtool_file *file,
 					       struct instruction *insn)
 {
 	struct instruction *next = next_insn_same_sec(file, insn);
@@ -81,7 +81,7 @@ static struct instruction *next_insn_same_func(struct objtool_file *file,
 	return find_insn(file, func->cfunc->sec, func->cfunc->offset);
 }
 
-static struct instruction *prev_insn_same_sec(struct objtool_file *file,
+struct instruction *prev_insn_same_sec(struct objtool_file *file,
 					      struct instruction *insn)
 {
 	if (insn->idx == 0) {
@@ -109,11 +109,6 @@ static struct instruction *prev_insn_same_sym(struct objtool_file *file,
 	     __fake; __fake = NULL)					\
 		for_each_sec(file, __sec)				\
 			sec_for_each_insn(file, __sec, insn)
-
-#define func_for_each_insn(file, func, insn)				\
-	for (insn = find_insn(file, func->sec, func->offset);		\
-	     insn;							\
-	     insn = next_insn_same_func(file, insn))
 
 #define sym_for_each_insn(file, sym, insn)				\
 	for (insn = find_insn(file, sym->sec, sym->offset);		\
@@ -3059,7 +3054,7 @@ static int update_cfi_state(struct instruction *insn,
 
 		case OP_SRC_ADD:
 			if (op->dest.reg == CFI_SP && op->src.reg == CFI_SP) {
-
+				/* riscv64: the 1st of 7 CFI ops: add sp, sp, imm */
 				/* add imm, %rsp */
 				cfi->stack_size -= op->src.offset;
 				if (cfa->base == CFI_SP)
@@ -3069,7 +3064,7 @@ static int update_cfi_state(struct instruction *insn,
 
 			if (op->dest.reg == CFI_BP && op->src.reg == CFI_SP &&
 			    insn->sym->frame_pointer) {
-				/* addi.d fp,sp,imm on LoongArch */
+				/* addi.d fp,sp,imm on LoongArch, riscv64(3rd) */
 				if (cfa->base == CFI_SP && cfa->offset == op->src.offset) {
 					cfa->base = CFI_BP;
 					cfa->offset = 0;
@@ -3078,7 +3073,7 @@ static int update_cfi_state(struct instruction *insn,
 			}
 
 			if (op->dest.reg == CFI_SP && op->src.reg == CFI_BP) {
-				/* addi.d sp,fp,imm on LoongArch */
+				/* addi.d sp,fp,imm on LoongArch, riscv64(5th) */
 				if (cfa->base == CFI_BP && cfa->offset == 0) {
 					if (insn->sym->frame_pointer) {
 						cfa->base = CFI_SP;
@@ -3123,7 +3118,7 @@ static int update_cfi_state(struct instruction *insn,
 				cfi->drap = false;
 				break;
 			}
-
+			/* riscv64: the 7th of 7 CFI ops: unusual SP/FP ops */
 			if (op->dest.reg == cfi->cfa.base && !(next_insn && next_insn->hint)) {
 				WARN_INSN(insn, "unsupported stack register modification");
 				return -1;
@@ -3131,6 +3126,7 @@ static int update_cfi_state(struct instruction *insn,
 
 			break;
 
+		/* riscv64: the 4th of 7 CFI ops: and sp,sp,-64 */
 		case OP_SRC_AND:
 			if (op->dest.reg != CFI_SP ||
 			    (cfi->drap_reg != CFI_UNDEFINED && cfa->base != CFI_SP) ||
@@ -3192,7 +3188,7 @@ static int update_cfi_state(struct instruction *insn,
 		case OP_SRC_REG_INDIRECT:
 			if (!cfi->drap && op->dest.reg == cfa->base &&
 			    op->dest.reg == CFI_BP) {
-
+				/* riscv64: the 6.2th of 7 CFI ops(cfi.base=BP): restore fp */
 				/* mov disp(%rsp), %rbp */
 				cfa->base = CFI_SP;
 				cfa->offset = cfi->stack_size;
@@ -3215,14 +3211,14 @@ static int update_cfi_state(struct instruction *insn,
 
 			} else if (op->src.reg == cfa->base &&
 			    op->src.offset == regs[op->dest.reg].offset + cfa->offset) {
-
+				/* riscv64: the 6.3th of 7 CFI ops(cfi.base=SP): restore ra, fp */
 				/* mov disp(%rbp), %reg */
 				/* mov disp(%rsp), %reg */
 				restore_reg(cfi, op->dest.reg);
 
 			} else if (op->src.reg == CFI_SP &&
 				   op->src.offset == regs[op->dest.reg].offset + cfi->stack_size) {
-
+				/* riscv64: the 6.1th of 7 CFI ops(cfi.base=BP): restore ra */
 				/* mov disp(%rsp), %reg */
 				restore_reg(cfi, op->dest.reg);
 			}
@@ -3296,7 +3292,7 @@ static int update_cfi_state(struct instruction *insn,
 			}
 
 		} else if (op->dest.reg == cfa->base) {
-
+			/* riscv64: the 2nd of 7 CFI ops: save ra, fp */
 			/* mov reg, disp(%rbp) */
 			/* mov reg, disp(%rsp) */
 			save_reg(cfi, op->src.reg, CFI_CFA,
