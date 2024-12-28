@@ -185,6 +185,45 @@ noinline noinstr void arch_stack_walk(stack_trace_consume_fn consume_entry, void
 	walk_stackframe(task, regs, consume_entry, cookie);
 }
 
+#ifdef CONFIG_UNWINDER_ORC
+int arch_stack_walk_reliable(stack_trace_consume_fn consume_entry,
+			     void *cookie, struct task_struct *task)
+{
+	struct unwind_state state;
+	struct pt_regs *regs;
+	unsigned long addr;
+
+	for (unwind_start(&state, task, NULL, NULL);
+	     !unwind_done(&state) && !unwind_error(&state);
+	     unwind_next_frame(&state)) {
+
+		regs = unwind_get_entry_regs(&state);
+		/* Success path for user tasks */
+		if (regs && user_mode(regs))
+				return 0;
+
+		addr = unwind_get_return_address(&state);
+
+		/*
+		 * A NULL or invalid return address probably means there's some
+		 * generated code which __kernel_text_address() doesn't know
+		 * about.
+		 */
+		if (!addr)
+			return -EINVAL;
+
+		if (!consume_entry(cookie, addr))
+			return -EINVAL;
+	}
+
+	/* Check for stack corruption */
+	if (unwind_error(&state))
+		return -EINVAL;
+
+	return 0;
+}
+#endif
+
 /*
  * Get the return address for a single stackframe and return a pointer to the
  * next frame tail.
