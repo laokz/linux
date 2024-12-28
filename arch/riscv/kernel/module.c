@@ -646,6 +646,7 @@ process_accumulated_relocations(struct module *me,
 			}
 			reloc_handlers[curr_type].accumulate_handler(
 				me, location, buffer);
+			kfree(rel_head_iter->rel_entry);
 			kfree(rel_head_iter);
 		}
 		kfree(bucket_iter);
