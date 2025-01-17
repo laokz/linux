@@ -39,7 +39,6 @@ done
 disable_lp $MOD_SYSCALL
 unload_lp $MOD_SYSCALL
 
-# TODO: Sometime there is "livepatch: signaling remaining tasks" on RISC-V. Why?
 check_result "% insmod test_modules/$MOD_SYSCALL.ko klp_pids=$pid_list
 livepatch: enabling patch '$MOD_SYSCALL'
 livepatch: '$MOD_SYSCALL': initializing patching transition
